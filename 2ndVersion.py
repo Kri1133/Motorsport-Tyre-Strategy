@@ -63,6 +63,9 @@ class SPageFileGraphic(Structure):
             "lastTime": self.lastTime,
         }
 
+    def numLaps(self):
+        return self.numberOfLaps
+
 
 class SPageFilePhysics(Structure):
     _fields_ = [
@@ -133,9 +136,10 @@ class SPageFilePhysics(Structure):
 
     def toDict(self):
         return {
-            "fuel": self.fuel,
-            "brakeBias": self.brakeBias,
-
+            "tyreWear": self.tyreWear[0],
+            "tyreTemp": self.tyreTemp[0],
+            "tyreDirtyLevel": self.tyreDirtyLevel[0],
+            "tyreCoreTemperature": self.tyreCoreTemperature[0],
         }
 
 
@@ -144,19 +148,25 @@ def read_physics():
     data = SPageFilePhysics.from_buffer(buf)
     return data.toDict()
 
-
-
-
 def read_graphics():
     buf = mmap.mmap(-1, sizeof(SPageFileGraphic), u"Local\\acpmf_graphics")
     data = SPageFileGraphic.from_buffer(buf)
     return data.toDict()
 
+completed_laps = 0
 
 while True:
+    buf1 = mmap.mmap(-1, sizeof(SPageFilePhysics), u"Local\\acpmf_physics")
+    data1 = SPageFilePhysics.from_buffer(buf1)
+    buf2 = mmap.mmap(-1, sizeof(SPageFileGraphic), u"Local\\acpmf_graphics")
+    data2 = SPageFileGraphic.from_buffer(buf2)
+    CL = data2.numLaps()
+    if completed_laps < CL:
+        print("--------------NEW LAP STARTED-------------------")
+        completed_laps = CL
     print(read_physics())
     print(read_graphics())
-    time.sleep(3)
+    time.sleep(0.5)
 
 
 

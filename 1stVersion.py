@@ -16,7 +16,7 @@ def get_snapshot():
     if g is None and hasattr(snap, "gas"): print("broooooo")
     if p is None and hasattr(snap, "brake"):  p = snap.get("brake")
 
-    print(type(snap), g, p, snap)
+    print(g, p, snap)
     return g, p
 
 def field(obj, *names, default=None):
