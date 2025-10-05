@@ -1,5 +1,9 @@
 from ctypes import Structure, sizeof, c_float, c_int32, c_wchar, c_int
-import mmap, time
+import mmap, time, csv
+from operator import concat
+
+import csvfile
+
 
 class SPageFileGraphic(Structure):
     _fields_ = [
@@ -59,12 +63,14 @@ class SPageFileGraphic(Structure):
     def toDict(self):
         return {
             "split": self.split,
-            "iBestTime": self.iBestTime,
-            "lastTime": self.lastTime,
+            "completedLaps": self.completedLaps
         }
 
     def numLaps(self):
         return self.numberOfLaps
+
+    def currTime(self):
+        return self.currentTime
 
 
 class SPageFilePhysics(Structure):
@@ -142,6 +148,9 @@ class SPageFilePhysics(Structure):
             "tyreCoreTemperature": self.tyreCoreTemperature[0],
         }
 
+    def getTyreWear(self):
+        return self.tyreWear[0]
+
 
 def read_physics():
     buf = mmap.mmap(-1, sizeof(SPageFilePhysics), u"Local\\acpmf_physics")
@@ -153,20 +162,26 @@ def read_graphics():
     data = SPageFileGraphic.from_buffer(buf)
     return data.toDict()
 
-completed_laps = 0
+with open("FP2.csv", 'w') as f:
+    fieldnames = ['tyreWear', 'tyreDirtyLevel', 'tyreCoreTemp',
+                  'tyreTempI', 'tyreTempM', 'tyreTempO']
+    writer = csv.writer(f)
+    writer.writerow(fieldnames)
+    while True:
+        data = []
+        graphicsDict = read_graphics()
+        physicsDict = read_physics()
+        data.append(physicsDict.get('tyreWear'))
+        data.append(physicsDict.get('tyreDirtyLevel'))
+        data.append(physicsDict.get('tyreCoreTemperature'))
+        data.append(physicsDict.get('tyreTempI'))
+        data.append(physicsDict.get('tyreTempM'))
+        data.append(physicsDict.get('tyreTempO'))
 
-while True:
-    buf1 = mmap.mmap(-1, sizeof(SPageFilePhysics), u"Local\\acpmf_physics")
-    data1 = SPageFilePhysics.from_buffer(buf1)
-    buf2 = mmap.mmap(-1, sizeof(SPageFileGraphic), u"Local\\acpmf_graphics")
-    data2 = SPageFileGraphic.from_buffer(buf2)
-    CL = data2.numLaps()
-    if completed_laps < CL:
-        print("--------------NEW LAP STARTED-------------------")
-        completed_laps = CL
-    print(read_physics())
-    print(read_graphics())
-    time.sleep(0.5)
+        if data[0] == 0.0:
+            continue
+        writer.writerow(data)
+        time.sleep(0.5)
 
 
 
